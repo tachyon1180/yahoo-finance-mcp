@@ -1,13 +1,50 @@
 from mcp.server.fastmcp import FastMCP
 import yfinance as yf
 import json
-from loguru import logger
+
 
 # Initialize FastMCP server
-mcp = FastMCP("yfinance")
+yfinance_server = FastMCP(
+    "yfinance",
+    prompt="""
+# Yahoo Finance MCP Server
+
+This server provides tools for searching the web using Yahoo Finance's API.
+It allows you to search for stock prices, news, and other information.
+
+## Available Tools
+
+### 1. get_historical_stock_prices
+Use this tool for getting historical stock prices for a given company.
+
+Example: "What is the historical stock price for apple in the last 3 months?"
+
+### 2. get_stock_info
+Use this tool for getting stock information for a given company.
+
+Example: "What is the financial metrics for apple?" or "Who are the company officers for tesla?"
+
+### 3. get_yahoo_finance_news
+Use this tool for getting news for a given company.
+
+Example: "What's the latest financial news on apple?"
+
+## Guidelines for Use
+
+- Always check if a query would be better served by stock price, stock info, or news search
+
+## Output Format
+
+All search results will be formatted as text with clear sections for each result item, including:
+
+- Stock price: Date, Open, High, Low, Close, Volume, Adj Close
+- Stock info: Company Information, Financial Metrics, Earnings & Revenue, Margins & Returns, Dividends, Balance Sheet, Ownership, Analyst Coverage, Risk Metrics, Other
+- News: Title, Summary, URL, and Description
+""",
+)
 
 
-@mcp.tool(
+@yfinance_server.tool(
     name="get_historical_stock_prices",
     description="Get historical stock prices for a given ticker symbol from yahoo finance. Include the following information: Date, Open, High, Low, Close, Volume, Adj Close.",
 )
@@ -29,10 +66,10 @@ async def get_historical_stock_prices(ticker: str, period: str = "1mo", interval
     company = yf.Ticker(ticker)
     try:
         if company.isin is None:
-            logger.warning(f"Company ticker {ticker} not found.")
+            print(f"Company ticker {ticker} not found.")
             return f"Company ticker {ticker} not found."
     except Exception as e:
-        logger.error(f"Error getting historical stock prices for {ticker}: {e}")
+        print(f"Error getting historical stock prices for {ticker}: {e}")
         return f"Error getting historical stock prices for {ticker}: {e}"
 
     # If the company is found, get the historical data
@@ -42,7 +79,7 @@ async def get_historical_stock_prices(ticker: str, period: str = "1mo", interval
     return hist_data
 
 
-@mcp.tool(
+@yfinance_server.tool(
     name="get_stock_info",
     description="""Get stock information for a given ticker symbol from yahoo finance. Include the following information:
 Stock Price & Trading Info, Company Information, Financial Metrics, Earnings & Revenue, Margins & Returns, Dividends, Balance Sheet, Ownership, Analyst Coverage, Risk Metrics, Other.""",
@@ -52,16 +89,16 @@ async def get_stock_info(ticker: str):
     company = yf.Ticker(ticker)
     try:
         if company.isin is None:
-            logger.warning(f"Company ticker {ticker} not found.")
+            print(f"Company ticker {ticker} not found.")
             return f"Company ticker {ticker} not found."
     except Exception as e:
-        logger.error(f"Error getting stock information for {ticker}: {e}")
+        print(f"Error getting stock information for {ticker}: {e}")
         return f"Error getting stock information for {ticker}: {e}"
     info = company.info
     return json.dumps(info)
 
 
-@mcp.tool(
+@yfinance_server.tool(
     name="get_yahoo_finance_news",
     description="Get news for a given ticker symbol from yahoo finance.",
 )
@@ -75,17 +112,17 @@ async def get_yahoo_finance_news(ticker: str):
     company = yf.Ticker(ticker)
     try:
         if company.isin is None:
-            logger.warning(f"Company ticker {ticker} not found.")
+            print(f"Company ticker {ticker} not found.")
             return f"Company ticker {ticker} not found."
     except Exception as e:
-        logger.error(f"Error getting news for {ticker}: {e}")
+        print(f"Error getting news for {ticker}: {e}")
         return f"Error getting news for {ticker}: {e}"
 
     # If the company is found, get the news
     try:
         news = company.news
     except Exception as e:
-        logger.error(f"Error getting news for {ticker}: {e}")
+        print(f"Error getting news for {ticker}: {e}")
         return f"Error getting news for {ticker}: {e}"
 
     news_list = []
@@ -97,11 +134,12 @@ async def get_yahoo_finance_news(ticker: str):
             url = news.get("content", {}).get("canonicalUrl", {}).get("url", "")
             news_list.append(f"Title: {title}\nSummary: {summary}\nDescription: {description}\nURL: {url}")
     if not news_list:
-        logger.warning(f"No news found for company that searched with {ticker} ticker.")
+        print(f"No news found for company that searched with {ticker} ticker.")
         return f"No news found for company that searched with {ticker} ticker."
     return "\n\n".join(news_list)
 
 
 if __name__ == "__main__":
     # Initialize and run the server
-    mcp.run(transport='stdio')
+    print("Starting Yahoo Finance MCP server...")
+    yfinance_server.run(transport='stdio') 
