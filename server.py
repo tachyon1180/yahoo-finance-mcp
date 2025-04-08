@@ -4,7 +4,6 @@ from enum import Enum
 import pandas as pd
 import yfinance as yf
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field
 
 
 # Define an enum for the type of financial statement
@@ -26,17 +25,6 @@ class HolderType(str, Enum):
     insider_roster_holders = "insider_roster_holders"
 
 
-class OptionChainInput(BaseModel):
-    ticker: str = Field(
-        ..., description="The ticker symbol of the stock to fetch the options chain for"
-    )
-    expiration_date: str = Field(
-        ...,
-        description="The expiration date for the options chain (format: 'YYYY-MM-DD')",
-    )
-    option_type: str = Field(..., description="The type of option to fetch (calls or puts)")
-
-
 class RecommendationType(str, Enum):
     recommendations = "recommendations"
     upgrades_downgrades = "upgrades_downgrades"
@@ -45,28 +33,40 @@ class RecommendationType(str, Enum):
 # Initialize FastMCP server
 yfinance_server = FastMCP(
     "yfinance",
-    prompt="""
+    instructions="""
 # Yahoo Finance MCP Server
 
 This server is used to get information about a given ticker symbol from yahoo finance.
 
 Available tools:
-- get_historical_stock_prices
-- get_stock_info
-- get_yahoo_finance_news
-- get_stock_actions
-- get_financial_statement
-- get_holder_info
-- get_option_expiration_dates
-- get_option_chain
-- get_recommendations
+- get_historical_stock_prices: Get historical stock prices for a given ticker symbol from yahoo finance. Include the following information: Date, Open, High, Low, Close, Volume, Adj Close.
+- get_stock_info: Get stock information for a given ticker symbol from yahoo finance. Include the following information: Stock Price & Trading Info, Company Information, Financial Metrics, Earnings & Revenue, Margins & Returns, Dividends, Balance Sheet, Ownership, Analyst Coverage, Risk Metrics, Other.
+- get_yahoo_finance_news: Get news for a given ticker symbol from yahoo finance.
+- get_stock_actions: Get stock dividends and stock splits for a given ticker symbol from yahoo finance.
+- get_financial_statement: Get financial statement for a given ticker symbol from yahoo finance. You can choose from the following financial statement types: income_stmt, quarterly_income_stmt, balance_sheet, quarterly_balance_sheet, cashflow, quarterly_cashflow.
+- get_holder_info: Get holder information for a given ticker symbol from yahoo finance. You can choose from the following holder types: major_holders, institutional_holders, mutualfund_holders, insider_transactions, insider_purchases, insider_roster_holders.
+- get_option_expiration_dates: Fetch the available options expiration dates for a given ticker symbol.
+- get_option_chain: Fetch the option chain for a given ticker symbol, expiration date, and option type.
+- get_recommendations: Get recommendations or upgrades/downgrades for a given ticker symbol from yahoo finance. You can also specify the number of months back to get upgrades/downgrades for, default is 12.
 """,
 )
 
 
 @yfinance_server.tool(
     name="get_historical_stock_prices",
-    description="Get historical stock prices for a given ticker symbol from yahoo finance. Include the following information: Date, Open, High, Low, Close, Volume, Adj Close.",
+    description="""Get historical stock prices for a given ticker symbol from yahoo finance. Include the following information: Date, Open, High, Low, Close, Volume, Adj Close.
+Args:
+    ticker: str
+        The ticker symbol of the stock to get historical prices for, e.g. "AAPL"
+    period : str
+        Valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
+        Either Use period parameter or use start and end
+        Default is "1mo"
+    interval : str
+        Valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
+        Intraday data cannot extend last 60 days
+        Default is "1d"
+""",
 )
 async def get_historical_stock_prices(
     ticker: str, period: str = "1mo", interval: str = "1d"
@@ -104,7 +104,12 @@ async def get_historical_stock_prices(
 @yfinance_server.tool(
     name="get_stock_info",
     description="""Get stock information for a given ticker symbol from yahoo finance. Include the following information:
-Stock Price & Trading Info, Company Information, Financial Metrics, Earnings & Revenue, Margins & Returns, Dividends, Balance Sheet, Ownership, Analyst Coverage, Risk Metrics, Other.""",
+Stock Price & Trading Info, Company Information, Financial Metrics, Earnings & Revenue, Margins & Returns, Dividends, Balance Sheet, Ownership, Analyst Coverage, Risk Metrics, Other.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get information for, e.g. "AAPL"
+""",
 )
 async def get_stock_info(ticker: str) -> str:
     """Get stock information for a given ticker symbol"""
@@ -122,7 +127,12 @@ async def get_stock_info(ticker: str) -> str:
 
 @yfinance_server.tool(
     name="get_yahoo_finance_news",
-    description="Get news for a given ticker symbol from yahoo finance.",
+    description="""Get news for a given ticker symbol from yahoo finance.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get news for, e.g. "AAPL"
+""",
 )
 async def get_yahoo_finance_news(ticker: str) -> str:
     """Get news for a given ticker symbol
@@ -165,7 +175,12 @@ async def get_yahoo_finance_news(ticker: str) -> str:
 
 @yfinance_server.tool(
     name="get_stock_actions",
-    description="Get stock dividends and stock splits for a given ticker symbol from yahoo finance.",
+    description="""Get stock dividends and stock splits for a given ticker symbol from yahoo finance.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get stock actions for, e.g. "AAPL"
+""",
 )
 async def get_stock_actions(ticker: str) -> str:
     """Get stock dividends and stock splits for a given ticker symbol"""
@@ -181,15 +196,27 @@ async def get_stock_actions(ticker: str) -> str:
 
 @yfinance_server.tool(
     name="get_financial_statement",
-    description="Get financial statement for a given ticker symbol from yahoo finance. You can choose from the following financial statement types: income_stmt, quarterly_income_stmt, balance_sheet, quarterly_balance_sheet, cashflow, quarterly_cashflow.",
+    description="""Get financial statement for a given ticker symbol from yahoo finance. You can choose from the following financial statement types: income_stmt, quarterly_income_stmt, balance_sheet, quarterly_balance_sheet, cashflow, quarterly_cashflow.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get financial statement for, e.g. "AAPL"
+    financial_type: str
+        The type of financial statement to get. You can choose from the following financial statement types: income_stmt, quarterly_income_stmt, balance_sheet, quarterly_balance_sheet, cashflow, quarterly_cashflow.
+""",
 )
-async def get_financial_statement(ticker: str, financial_type: FinancialType) -> str:
+async def get_financial_statement(ticker: str, financial_type: str) -> str:
     """Get financial statement for a given ticker symbol"""
+
+    company = yf.Ticker(ticker)
     try:
-        company = yf.Ticker(ticker)
+        if company.isin is None:
+            print(f"Company ticker {ticker} not found.")
+            return f"Company ticker {ticker} not found."
     except Exception as e:
         print(f"Error: getting financial statement for {ticker}: {e}")
         return f"Error: getting financial statement for {ticker}: {e}"
+
     if financial_type == FinancialType.income_stmt:
         financial_statement = company.income_stmt
     elif financial_type == FinancialType.quarterly_income_stmt:
@@ -202,6 +229,8 @@ async def get_financial_statement(ticker: str, financial_type: FinancialType) ->
         financial_statement = company.cashflow
     elif financial_type == FinancialType.quarterly_cashflow:
         financial_statement = company.quarterly_cashflow
+    else:
+        return f"Error: invalid financial type {financial_type}. Please use one of the following: {FinancialType.income_stmt}, {FinancialType.quarterly_income_stmt}, {FinancialType.balance_sheet}, {FinancialType.quarterly_balance_sheet}, {FinancialType.cashflow}, {FinancialType.quarterly_cashflow}."
 
     # Create a list to store all the json objects
     result = []
@@ -228,15 +257,27 @@ async def get_financial_statement(ticker: str, financial_type: FinancialType) ->
 
 @yfinance_server.tool(
     name="get_holder_info",
-    description="Get holder information for a given ticker symbol from yahoo finance. You can choose from the following holder types: major_holders, institutional_holders, mutualfund_holders, insider_transactions, insider_purchases, insider_roster_holders.",
+    description="""Get holder information for a given ticker symbol from yahoo finance. You can choose from the following holder types: major_holders, institutional_holders, mutualfund_holders, insider_transactions, insider_purchases, insider_roster_holders.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get holder information for, e.g. "AAPL"
+    holder_type: str
+        The type of holder information to get. You can choose from the following holder types: major_holders, institutional_holders, mutualfund_holders, insider_transactions, insider_purchases, insider_roster_holders.
+""",
 )
-async def get_holder_info(ticker: str, holder_type: HolderType) -> str:
+async def get_holder_info(ticker: str, holder_type: str) -> str:
     """Get holder information for a given ticker symbol"""
+
+    company = yf.Ticker(ticker)
     try:
-        company = yf.Ticker(ticker)
+        if company.isin is None:
+            print(f"Company ticker {ticker} not found.")
+            return f"Company ticker {ticker} not found."
     except Exception as e:
-        print(f"Error: getting holder information for {ticker}: {e}")
-        return f"Error: getting holder information for {ticker}: {e}"
+        print(f"Error: getting holder info for {ticker}: {e}")
+        return f"Error: getting holder info for {ticker}: {e}"
+
     if holder_type == HolderType.major_holders:
         return company.major_holders.reset_index(names="metric").to_json(orient="records")
     elif holder_type == HolderType.institutional_holders:
@@ -249,16 +290,27 @@ async def get_holder_info(ticker: str, holder_type: HolderType) -> str:
         return company.insider_purchases.to_json(orient="records", date_format="iso")
     elif holder_type == HolderType.insider_roster_holders:
         return company.insider_roster_holders.to_json(orient="records", date_format="iso")
+    else:
+        return f"Error: invalid holder type {holder_type}. Please use one of the following: {HolderType.major_holders}, {HolderType.institutional_holders}, {HolderType.mutualfund_holders}, {HolderType.insider_transactions}, {HolderType.insider_purchases}, {HolderType.insider_roster_holders}."
 
 
 @yfinance_server.tool(
     name="get_option_expiration_dates",
-    description="Fetch the available options expiration dates for a given ticker symbol.",
+    description="""Fetch the available options expiration dates for a given ticker symbol.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get option expiration dates for, e.g. "AAPL"
+""",
 )
 async def get_option_expiration_dates(ticker: str) -> str:
     """Fetch the available options expiration dates for a given ticker symbol."""
+
+    company = yf.Ticker(ticker)
     try:
-        company = yf.Ticker(ticker)
+        if company.isin is None:
+            print(f"Company ticker {ticker} not found.")
+            return f"Company ticker {ticker} not found."
     except Exception as e:
         print(f"Error: getting option expiration dates for {ticker}: {e}")
         return f"Error: getting option expiration dates for {ticker}: {e}"
@@ -267,7 +319,16 @@ async def get_option_expiration_dates(ticker: str) -> str:
 
 @yfinance_server.tool(
     name="get_option_chain",
-    description="Fetch the option chain for a given ticker symbol, expiration date, and option type.",
+    description="""Fetch the option chain for a given ticker symbol, expiration date, and option type.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get option chain for, e.g. "AAPL"
+    expiration_date: str
+        The expiration date for the options chain (format: 'YYYY-MM-DD')
+    option_type: str
+        The type of option to fetch ('calls' or 'puts')
+""",
 )
 async def get_option_chain(ticker: str, expiration_date: str, option_type: str) -> str:
     """Fetch the option chain for a given ticker symbol, expiration date, and option type.
@@ -280,8 +341,12 @@ async def get_option_chain(ticker: str, expiration_date: str, option_type: str) 
     Returns:
         str: JSON string containing the option chain data
     """
+
+    company = yf.Ticker(ticker)
     try:
-        company = yf.Ticker(ticker)
+        if company.isin is None:
+            print(f"Company ticker {ticker} not found.")
+            return f"Company ticker {ticker} not found."
     except Exception as e:
         print(f"Error: getting option chain for {ticker}: {e}")
         return f"Error: getting option chain for {ticker}: {e}"
@@ -300,33 +365,50 @@ async def get_option_chain(ticker: str, expiration_date: str, option_type: str) 
         return option_chain.calls.to_json(orient="records", date_format="iso")
     elif option_type == "puts":
         return option_chain.puts.to_json(orient="records", date_format="iso")
-    return ""  # This line should never be reached due to the validation above
+    else:
+        return f"Error: invalid option type {option_type}. Please use one of the following: calls, puts."
 
 
 @yfinance_server.tool(
     name="get_recommendations",
-    description="Get recommendations for a given ticker symbol from yahoo finance. You can choose from the following recommendation types: recommendations, upgrades_downgrades. You can also specify the number of months back to get recommendations for, default is 12.",
+    description="""Get recommendations or upgrades/downgrades for a given ticker symbol from yahoo finance. You can also specify the number of months back to get upgrades/downgrades for, default is 12.
+
+Args:
+    ticker: str
+        The ticker symbol of the stock to get recommendations for, e.g. "AAPL"
+    recommendation_type: str
+        The type of recommendation to get. You can choose from the following recommendation types: recommendations, upgrades_downgrades.
+    months_back: int
+        The number of months back to get upgrades/downgrades for, default is 12.
+""",
 )
-async def get_recommendations(
-    ticker: str, recommendation_type: RecommendationType, months_back: int = 12
-) -> str:
+async def get_recommendations(ticker: str, recommendation_type: str, months_back: int = 12) -> str:
     """Get recommendations or upgrades/downgrades for a given ticker symbol"""
+    company = yf.Ticker(ticker)
     try:
-        company = yf.Ticker(ticker)
+        if company.isin is None:
+            print(f"Company ticker {ticker} not found.")
+            return f"Company ticker {ticker} not found."
     except Exception as e:
         print(f"Error: getting recommendations for {ticker}: {e}")
         return f"Error: getting recommendations for {ticker}: {e}"
-    if recommendation_type == RecommendationType.recommendations:
-        return company.recommendations.to_json(orient="records")
-    elif recommendation_type == RecommendationType.upgrades_downgrades:
-        # Get the upgrades/downgrades based on the cutoff date
-        upgrades_downgrades = company.upgrades_downgrades.reset_index()
-        cutoff_date = pd.Timestamp.now() - pd.DateOffset(months=months_back)
-        upgrades_downgrades = upgrades_downgrades[upgrades_downgrades["GradeDate"] >= cutoff_date]
-        upgrades_downgrades = upgrades_downgrades.sort_values("GradeDate", ascending=False)
-        # Get the first occurrence (most recent) for each firm
-        latest_by_firm = upgrades_downgrades.drop_duplicates(subset=["Firm"])
-        return latest_by_firm.to_json(orient="records", date_format="iso")
+    try:
+        if recommendation_type == RecommendationType.recommendations:
+            return company.recommendations.to_json(orient="records")
+        elif recommendation_type == RecommendationType.upgrades_downgrades:
+            # Get the upgrades/downgrades based on the cutoff date
+            upgrades_downgrades = company.upgrades_downgrades.reset_index()
+            cutoff_date = pd.Timestamp.now() - pd.DateOffset(months=months_back)
+            upgrades_downgrades = upgrades_downgrades[
+                upgrades_downgrades["GradeDate"] >= cutoff_date
+            ]
+            upgrades_downgrades = upgrades_downgrades.sort_values("GradeDate", ascending=False)
+            # Get the first occurrence (most recent) for each firm
+            latest_by_firm = upgrades_downgrades.drop_duplicates(subset=["Firm"])
+            return latest_by_firm.to_json(orient="records", date_format="iso")
+    except Exception as e:
+        print(f"Error: getting recommendations for {ticker}: {e}")
+        return f"Error: getting recommendations for {ticker}: {e}"
 
 
 if __name__ == "__main__":
