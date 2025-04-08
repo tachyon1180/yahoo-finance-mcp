@@ -6,7 +6,7 @@ This is a Model Context Protocol (MCP) server that provides comprehensive financ
 
 ## Demo
 
-![Demo](assets/demo.mov)
+![MCP Demo](assets/demo.gif)
 
 ## MCP Tools
 
