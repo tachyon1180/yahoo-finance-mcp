@@ -2,6 +2,14 @@
 
 This is a Model Context Protocol (MCP) server that provides comprehensive financial data from Yahoo Finance. It allows you to retrieve detailed information about stocks, including historical prices, company information, financial statements, options data, and market news.
 
+[![smithery badge](https://smithery.ai/badge/@Alex2Yang97/yahoo-finance-mcp)](https://smithery.ai/server/@Alex2Yang97/yahoo-finance-mcp)
+
+## Demo
+
+<video src="assets/demo.mov" width="800" height="450" controls>
+  Your browser does not support the video tag.
+</video>
+
 ## MCP Tools
 
 The server exposes the following tools through the Model Context Protocol:
@@ -34,7 +42,6 @@ The server exposes the following tools through the Model Context Protocol:
 | Tool | Description |
 |------|-------------|
 | `get_recommendations` | Get analyst recommendations or upgrades/downgrades history |
-
 
 ## Real-World Use Cases
 
@@ -76,18 +83,18 @@ With this MCP server, you can use Claude to:
 
 ## Setup
 
-1. Clone this repository
-   ```
+1. Clone this repository:
+   ```bash
    git clone https://github.com/Alex2Yang97/yahoo-finance-mcp.git
    cd yahoo-finance-mcp
    ```
+
 2. Create and activate a virtual environment and install dependencies:
-   ```
+   ```bash
    uv venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    uv pip install -e .
    ```
-
 
 ## Usage
 
@@ -95,7 +102,7 @@ With this MCP server, you can use Claude to:
 
 You can test the server with MCP Inspector by running:
 
-```
+```bash
 uv run server.py
 ```
 
@@ -105,44 +112,51 @@ This will start the server and allow you to test the available tools.
 
 To integrate this server with Claude for Desktop:
 
-1. Edit the Claude for Desktop config file, located at:
+1. Install Claude for Desktop to your local machine.
+2. Install VS Code to your local machine. Then run the following command to open the `claude_desktop_config.json` file:
+   - MacOS: `code ~/Library/Application\ Support/Claude/claude_desktop_config.json`
+   - Windows: `code $env:AppData\Claude\claude_desktop_config.json`
+
+3. Edit the Claude for Desktop config file, located at:
    - macOS: 
-      ```json
-      {
-        "mcpServers": {
-            "yfinance": {
-                "command": "uv",
-                "args": [
-                    "--directory",
-                    "/ABSOLUTE/PATH/TO/PARENT/FOLDER/yahoo-finance-mcp",
-                    "run",
-                    "server.py"
-                ]
-            }
-        }
-      }
-      ```
+     ```json
+     {
+       "mcpServers": {
+         "yfinance": {
+           "command": "uv",
+           "args": [
+             "--directory",
+             "/ABSOLUTE/PATH/TO/PARENT/FOLDER/yahoo-finance-mcp",
+             "run",
+             "server.py"
+           ]
+         }
+       }
+     }
+     ```
    - Windows:
-      ```json
-      {
-          "mcpServers": {
-              "yfinance": {
-            "command": "uv",
-            "args": [
-                    "--directory",
-                    "C:\\ABSOLUTE\\PATH\\TO\\PARENT\\FOLDER\\yahoo-finance-mcp",
-                    "run",
-                    "server.py"
-                ]
-            }
-          }
-      }
-      ```
+     ```json
+     {
+       "mcpServers": {
+         "yfinance": {
+           "command": "uv",
+           "args": [
+             "--directory",
+             "C:\\ABSOLUTE\\PATH\\TO\\PARENT\\FOLDER\\yahoo-finance-mcp",
+             "run",
+             "server.py"
+           ]
+         }
+       }
+     }
+     ```
 
-      Note: You may need to put the full path to the uv executable in the command field. You can get this by running which uv on MacOS/Linux or where uv on Windows.
+   - **Note**: You may need to put the full path to the uv executable in the command field. You can get this by running `which uv` on MacOS/Linux or `where uv` on Windows.
 
-3. Restart Claude for Desktop
+4. Restart Claude for Desktop
 
 ## License
 
 MIT
+
+
