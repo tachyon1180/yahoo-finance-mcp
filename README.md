@@ -6,9 +6,7 @@ This is a Model Context Protocol (MCP) server that provides comprehensive financ
 
 ## Demo
 
-<video src="assets/demo.mov" width="800" height="450" controls>
-  Your browser does not support the video tag.
-</video>
+![Demo](assets/demo.gif)
 
 ## MCP Tools
 
